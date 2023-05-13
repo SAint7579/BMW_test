@@ -30,3 +30,60 @@ def recursive_compound_extraction(token, compounds = []):
     # Return the compounds
     return compounds
 
+
+def get_key_terms_with_pos(text):
+    """
+    Extracts key terms from a text and returns them with their POS tags.
+    
+    Parameters
+    ----------
+    text : str
+        Input text.
+    
+    Returns
+    -------
+    list of dict
+        List of dictionaries containing the key terms and other important pos tag information.
+    
+    """
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(text)
+
+    all_tags = []
+    for token in doc:
+        if token.pos_ == "NOUN" or token.pos_ == "PROPN" or token.pos_ == "PRON":
+
+            if token.pos_ == "PRON":
+                # This is mainly for the 'iX' type keywords that are recongized as pronouns.
+                # We want to make sure that these are compound words
+                if len(list(token.children)) == 0:
+                    continue
+
+            # Getting the full term
+            compound = recursive_compound_extraction(token, [])
+            compound.append(token)
+            
+            tags = {'values': compound,
+                    'main_token': token,
+                    'text': ' '.join([i.text for i in compound]),
+                    'child_conj': [i for i in token.children if i.pos_ == 'CCONJ'],
+                    'pos': token.pos_,
+                    'dep': token.dep_,
+                    'head': token.head,}
+            
+            all_tags.append(tags)
+
+    # Reduction Logic:
+    all_values = [i['values'] for i in all_tags]
+
+    unique_tags = []
+    for t in all_tags:
+        # Logic: If there are more than one tag that contains all the values of the current tag, then there is a superset persent in all_tags
+        number_of_supersets = sum([len(set(t['values'])-set(all_tags[0])-set(j)) == 0 for j in all_values])
+
+        # There should only be one superset (itself)
+        if number_of_supersets==1:
+            unique_tags.append(t)
+
+    # Returning all_tags just in case we need some head not captured in the unique_tags
+    return unique_tags, all_tags
