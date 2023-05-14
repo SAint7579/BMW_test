@@ -2,7 +2,9 @@ from utilities import lcs_similarity, softmax
 from pos_tagging import *
 from textblob import TextBlob
 from textblob.sentiments import NaiveBayesAnalyzer
+import datefinder
 import numpy as np
+import re
 
 MODEL_TYPE_CODE = { 'iX xDrive50': '21CF',
                     'iX xDrive40': '11CF',
@@ -135,12 +137,12 @@ def get_boolean_logic_datastruct(tags, segregated):
     logic_sentiment = []
     for s,t in zip(segregated, tags):
         if s in [1,2,3]:
-            print(t)
+            # print(t)
 
             ## Getting the sentiment of the head
             head_sentiment = get_word_sentiment(t['head'].text)
 
-            if abs(head_sentiment) < 0.2:
+            if abs(head_sentiment) < 0.5:
                 ## We use the previous one
                 t['connotation'] = prev_tag['connotation'] if prev_tag else 'pos'
             else:
@@ -205,3 +207,140 @@ def get_boolean_logic_datastruct(tags, segregated):
             prev_cat = s
 
     return logic, logic_sentiment
+
+
+def convert_to_boolean_formula(logic, logic_sentiment):
+    """
+    Convert the boolean logic data structure to a boolean formula.
+    The formula here only contains +, /, +- and /- operators.
+    
+    Parameters
+    ----------
+    logic : list
+        Boolean logic data structure.
+    logic_sentiment : list
+        Boolean logic sentiment.
+    
+    Returns
+    -------
+    str
+        Boolean formula.
+    
+    """
+    ret_string = ''
+    for l,ls in zip(logic,logic_sentiment):
+        # For the OR situation, we need to put the code in parantheses
+        if len(l)>1:
+            if l[0]['code'][0] == '-':
+                # To limit the signs to only the 4 given in the document, we need to take the '-' sign out
+                for i in range(len(l)):
+                    if l[i]['code'][0] == '-':
+                        l[i]['code'] = l[i]['code'][1:]
+                    else:
+                        pass
+            
+                ret_string += '+-(' + '/'.join([i['code'] for i in l]) + ')'
+            else:
+                ret_string += '+(' + '/'.join([i['code'] for i in l]) + ')'
+            
+        else:
+            # If there is just one element of that category
+            ret_string += ls + l[0]['code']
+
+    return ret_string
+
+
+def get_model_type_codes(tags,segregated):
+    """
+    Get the model type codes from the tags and segregated list.
+    
+    Parameters
+    ----------
+    tags : list
+        List of tags.
+    segregated : list
+        List of segregated tags.
+    
+    Returns
+    -------
+    list
+        List of model type codes.
+    
+    """
+    code_dict = MODEL_TYPE_CODE
+    model_type_codes = []
+    for t,s in zip(tags,segregated):
+        if s == 0:
+            # Trying to get it directly from dictornary indexing
+            if t['main_token'].text in code_dict.keys():
+                model_type_codes.append(code_dict[t['main_token'].text])
+
+            elif t['text'] in code_dict.keys():
+                model_type_codes.append(code_dict[t['text']])
+
+            # Fetching with LCS similarity
+            else:
+                similarity_score = [lcs_similarity(t['text'],i,type='min') for i in list(code_dict.keys())]
+                # Rounding off to 2 decimal places
+                similarity_score = [round(i,2) for i in similarity_score]
+                max_score = max(similarity_score)
+                if  max_score>= 0.6:
+                    # Appending all the codes whit score = max_score
+                    model_type_codes += [list(code_dict.values())[i] for i in range(len(similarity_score)) if similarity_score[i] == max_score]
+
+    return model_type_codes
+
+
+def get_request_body(text):
+    """
+    Get the request body from the text.
+    
+    Parameters
+    ----------
+    text : str
+        Input Text.
+    
+    Returns
+    -------
+    list
+        List of request bodies.
+    list
+        List of model type codes, boolean formula and date.
+    
+    """
+    # Dealing with some specific special characters
+    text = re.sub(r'[-/]', ' ', text)
+    text = re.sub(r'&', 'and', text)
+
+    ## Getting the tags and segregating them
+    tags,_ = get_key_terms_with_pos(text)
+    segregated = segregated_tags(tags)
+
+    ## Fetching the model type codes
+    model_type_codes = get_model_type_codes(tags,segregated)
+
+    if len(model_type_codes) == 0:
+        raise Exception("No model information found in the text.")
+
+    ## Getting the boolean formula
+    logic, logic_sentiment = get_boolean_logic_datastruct(tags, segregated)
+    boolean_formula = convert_to_boolean_formula(logic, logic_sentiment)
+
+    matches = list(datefinder.find_dates(text))
+
+    if len(matches) == 0:
+        raise Exception("Please provide a valid date in the text.")
+        
+    date = matches[0].date().strftime("%Y-%m-%d")
+
+    ## Creating the request body
+    request_bodies = []
+    for mtype in model_type_codes:
+            
+            request_bodies.append({
+                "modelTypeCodes": [mtype],
+                "booleanFormulas": [boolean_formula],
+                "dates": [date]
+            })
+
+    return request_bodies , [model_type_codes, boolean_formula, date]

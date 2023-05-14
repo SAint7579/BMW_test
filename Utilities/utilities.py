@@ -128,3 +128,4 @@ def lcs_similarity(s1, s2, type='min'):
         return L[m][n] / max(m, n)
     else:
         return L[m][n] / min(m, n)
+    
