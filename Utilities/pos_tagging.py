@@ -67,13 +67,14 @@ def get_key_terms_with_pos(text):
                     'main_token': token,
                     'text': ' '.join([i.text for i in compound]),
                     'child_conj': [i for i in token.children if i.pos_ == 'CCONJ'],
+                    'head_conj': [i for i in token.head.children if i.pos_ == 'CCONJ'],
                     'pos': token.pos_,
                     'dep': token.dep_,
                     'head': token.head,}
             
             all_tags.append(tags)
 
-    # Reduction Logic:
+    # Reduction Logic: This is because just adding NOUNS is creating redndant tags
     all_values = [i['values'] for i in all_tags]
 
     unique_tags = []
