@@ -1,11 +1,14 @@
 from utilities import lcs_similarity, softmax
 from pos_tagging import *
-from textblob import TextBlob
+from textblob import TextBlob, download_corpora
 from textblob.sentiments import NaiveBayesAnalyzer
 import datefinder
 import numpy as np
 import re
 import datetime 
+
+## Downloading the corpora required by textblob
+download_corpora.download_all()
 
 MODEL_TYPE_CODE = { 'iX xDrive50': '21CF',
                     'iX xDrive40': '11CF',
