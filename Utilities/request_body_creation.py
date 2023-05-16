@@ -260,7 +260,7 @@ def convert_to_boolean_formula(logic, logic_sentiment):
                     if l[i]['code'][0] == '-':
                         l[i]['code'] = l[i]['code'][1:]
                     else:
-                        pass
+                        l[i]['code'] = '-'+l[i]['code']
             
                 ret_string += '+-(' + '/'.join([i['code'] for i in l]) + ')'
             else:
