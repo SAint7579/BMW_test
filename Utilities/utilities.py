@@ -99,6 +99,10 @@ def lcs_similarity(s1, s2, type='min', extreme_length=None):
         First string.
     s2 : str
         Second string.
+    type : str, optional
+        Normalize with the min/max of the string length. The default is 'min'.
+    extreme_length : int, optional
+        The shortest/longest a string of this type can be. The default is None.
     
     Returns
     -------
@@ -126,6 +130,8 @@ def lcs_similarity(s1, s2, type='min', extreme_length=None):
     # If we divide by min, there are problems with the overlapping names of other configuration.
     if type == 'max':
         if extreme_length:
+            ## This is in case POS tagger adds additional words as compounds
+            ## Essentially, the traget cannot be shorter than shortest key and longer than longest key
             din = min(max(m, n), extreme_length)
         else:
             din = max(m, n)
