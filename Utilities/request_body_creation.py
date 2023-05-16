@@ -222,8 +222,10 @@ def get_boolean_logic_datastruct(tags, segregated):
 
                 # print([[i['code'] for i in j] for j in logic])
                 # print(logic_sentiment)
+
             if assigned:
                 # Only saving if it acutally got used in the logic. This is to avoid the case where the tag was misclassified.
+                # This could have just been done in the previous if statement, but I needed assigned for debugging.
                 prev_tag = t
                 prev_cat = s
 
