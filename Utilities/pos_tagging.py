@@ -1,9 +1,16 @@
 
 import spacy
 from utilities import lcs_similarity
+import os
 
-
+## Installing some models required by spacy if it is not already installed
+if "en_core_web_md" not in spacy.util.get_installed_models():
+    # Download the model
+    spacy.cli.download("en_core_web_md")
+    
 nlp = spacy.load("en_core_web_md")
+
+
 
 
 def recursive_compound_extraction(token, compounds = []):

@@ -9,13 +9,6 @@ def resolve_path(path):
 
 if __name__ == "__main__":
 
-    ## Installing some models required by spacy if it is not already installed
-    try:
-        spacy.load("en_core_web_md")
-    except OSError:
-        os.system("python -m spacy download en_core_web_md")
-
-
     sys.argv = [
         "streamlit",
         "run",
