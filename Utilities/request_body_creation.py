@@ -143,6 +143,7 @@ def get_boolean_logic_datastruct(tags, segregated):
     for s,t in zip(segregated, tags):
         if s in [1,2,3]:
             # print(t)
+            assigned = False
 
             ## Getting the sentiment of the head
             head_sentiment = get_word_sentiment(t['head'].text)
@@ -165,11 +166,13 @@ def get_boolean_logic_datastruct(tags, segregated):
             try:
                 # First try to fetch with direct indexing
                 code = code_dict[t['text']]
+                assigned = True
             except:
                 # if not found, try to use the LCS similarity (Using max in this case)
                 similarity_score = [lcs_similarity(t['text'],i,type='max') for i in list(code_dict.keys())]
                 if max(similarity_score) >= 0.5:
                     code = list(code_dict.values())[np.argmax(similarity_score)]
+                    assigned = True
 
             # If the code ends up being None, then the tag was misclassified
 
@@ -207,9 +210,10 @@ def get_boolean_logic_datastruct(tags, segregated):
 
                 # print([[i['code'] for i in j] for j in logic])
                 # print(logic_sentiment)
-
-            prev_tag = t
-            prev_cat = s
+            if assigned:
+                # Only saving if it acutally got used in the logic. This is to avoid the case where the tag was misclassified.
+                prev_tag = t
+                prev_cat = s
 
     return logic, logic_sentiment
 
@@ -289,7 +293,7 @@ def get_model_type_codes(tags,segregated):
                 # Rounding off to 2 decimal places
                 similarity_score = [round(i,2) for i in similarity_score]
                 max_score = max(similarity_score)
-                if  max_score>= 0.6:
+                if  max_score>= 0.6 and (len(t['text'])>1):
                     # Appending all the codes whit score = max_score
                     model_type_codes += [list(code_dict.values())[i] for i in range(len(similarity_score)) if similarity_score[i] == max_score]
 
@@ -323,7 +327,8 @@ def get_request_body(text, exception_handeling=True):
     print(text)
 
     # Converting to title for easy POS recognition of big phrases
-    text = text.title()
+    # This is causing problems with the logic extraction
+    # text = text.title()
 
     # Getting the tags and segregating them
     tags,_ = get_key_terms_with_pos(text)
@@ -353,7 +358,6 @@ def get_request_body(text, exception_handeling=True):
     if len(matches) == 0 and exception_handeling:
         raise Exception("No date information found. Please provide a valid date in the query.")
         
-    print(matches)
     ## Selecting the date with the largest length of source
     matches = sorted(matches, key=lambda x: len(x[1]), reverse=True)
     date = matches[0][0].date()

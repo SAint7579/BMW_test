@@ -45,14 +45,14 @@ if __name__ == '__main__':
                     request_bodies += get_request_body(p)[0]
                 except Exception as e:
                     st.write(f'Error in query {i+1}: {e}')
-                    continue
+                    pass
 
             if len(request_bodies) > 0:
                 # Converting request bodies to json
-                json_str = json.dumps(request_bodies, indent=1)
+                json_str = json.dumps(request_bodies, indent=2)
 
                 # Putting the string in a text area
-                st.text_area("Request Body", value=json_str, height=200, max_chars=None, key=None)
+                request_body = st.text_area("Request Body", value=json_str, height=200, max_chars=None, key=None)
 
                 submit_rb = st.button('Submit')
 

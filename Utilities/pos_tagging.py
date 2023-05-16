@@ -32,7 +32,7 @@ def recursive_compound_extraction(token, compounds = []):
     """
     # Go through all children of the token
     for child in token.children:
-        if child.dep_ in ['compound', 'amod', 'nummod']:
+        if child.dep_ in ['compound', 'amod']:
             if len(list(child.children)) > 0:
                 # Call recursively if the child have more children
                 recursive_compound_extraction(child, compounds)
