@@ -86,7 +86,7 @@ def get_key_terms_with_pos(text):
             
             tags = {'values': compound,
                     'main_token': token,
-                    'text': ' '.join([i.text for i in compound]),
+                    'text': ' '.join([i.text for i in compound]).strip(),
                     'child_conj': [i for i in token.children if i.pos_ == 'CCONJ'],
                     'head_conj': [i for i in token.head.children if i.pos_ == 'CCONJ'],
                     'pos': token.pos_,

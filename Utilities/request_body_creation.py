@@ -17,8 +17,8 @@ MODEL_TYPE_CODE = { 'ix xdrive50': '21CF',
                     'm8': 'DZ01',
                     '318i': '28FF',}
 
-STEERING_CONFIG_CODE = { 'left-hand drive': 'LL',
-                         'right-hand drive': 'RL',}
+STEERING_CONFIG_CODE = { 'left hand drive': 'LL',
+                         'right hand drive': 'RL',}
 
 PACKAGE_CODE = {    'm sport package': 'P337A',
                     'm sport package pro': 'P33BA',
@@ -27,6 +27,19 @@ PACKAGE_CODE = {    'm sport package': 'P337A',
 ROOF_CONFIG_CODE = {'panorama glass roof': 'S402A',
                     'panorama glass roof sky lounge': 'S407A',
                     'sunroof': 'S403A'}
+
+
+## Getting the longest key length for each dictionary
+EXTREME_LENGTH_MAX = [max([len(i) for i in list(MODEL_TYPE_CODE.keys())]),
+                        max([len(i) for i in list(STEERING_CONFIG_CODE.keys())]),
+                        max([len(i) for i in list(PACKAGE_CODE.keys())]),
+                        max([len(i) for i in list(ROOF_CONFIG_CODE.keys())])]
+
+## Getting the shortest key length for each dictionary
+EXTREME_LENGTH_MIN = [min([len(i) for i in list(MODEL_TYPE_CODE.keys())]),
+                        min([len(i) for i in list(STEERING_CONFIG_CODE.keys())]),
+                        min([len(i) for i in list(PACKAGE_CODE.keys())]),
+                        min([len(i) for i in list(ROOF_CONFIG_CODE.keys())])]
 
 
 def segregated_tags(tags):
@@ -52,10 +65,10 @@ def segregated_tags(tags):
         tag_text = t['text']
 
         # Getting the match score with each dictionary
-        match_score = [ max([lcs_similarity(tag_text,i,type='min') for i in list(MODEL_TYPE_CODE.keys())]),
-                        max([lcs_similarity(tag_text,i,type='min') for i in list(STEERING_CONFIG_CODE.keys())]),
-                        max([lcs_similarity(tag_text,i,type='min') for i in list(PACKAGE_CODE.keys())]),
-                        max([lcs_similarity(tag_text,i,type='min') for i in list(ROOF_CONFIG_CODE.keys())])]
+        match_score = [ max([lcs_similarity(tag_text,i,type='min',extreme_length=EXTREME_LENGTH_MIN[0]) for i in list(MODEL_TYPE_CODE.keys())]),
+                        max([lcs_similarity(tag_text,i,type='min',extreme_length=EXTREME_LENGTH_MIN[1]) for i in list(STEERING_CONFIG_CODE.keys())]),
+                        max([lcs_similarity(tag_text,i,type='min',extreme_length=EXTREME_LENGTH_MIN[2]) for i in list(PACKAGE_CODE.keys())]),
+                        max([lcs_similarity(tag_text,i,type='min',extreme_length=EXTREME_LENGTH_MIN[3]) for i in list(ROOF_CONFIG_CODE.keys())])]
         
         
         if max(match_score) >= 0.5:
@@ -142,7 +155,6 @@ def get_boolean_logic_datastruct(tags, segregated):
     logic_sentiment = []
     for s,t in zip(segregated, tags):
         if s in [1,2,3]:
-            # print(t)
             assigned = False
 
             ## Getting the sentiment of the head
@@ -169,7 +181,7 @@ def get_boolean_logic_datastruct(tags, segregated):
                 assigned = True
             except:
                 # if not found, try to use the LCS similarity (Using max in this case)
-                similarity_score = [lcs_similarity(t['text'],i,type='max') for i in list(code_dict.keys())]
+                similarity_score = [lcs_similarity(t['text'],i,type='max', extreme_length=EXTREME_LENGTH_MAX[s]) for i in list(code_dict.keys())]
                 if max(similarity_score) >= 0.5:
                     code = list(code_dict.values())[np.argmax(similarity_score)]
                     assigned = True
@@ -289,7 +301,7 @@ def get_model_type_codes(tags,segregated):
 
             # Fetching with LCS similarity
             else:
-                similarity_score = [lcs_similarity(t['text'],i,type='min') for i in list(code_dict.keys())]
+                similarity_score = [lcs_similarity(t['text'],i,type='min', extreme_length=EXTREME_LENGTH_MIN[0]) for i in list(code_dict.keys())]
                 # Rounding off to 2 decimal places
                 similarity_score = [round(i,2) for i in similarity_score]
                 max_score = max(similarity_score)
@@ -323,8 +335,6 @@ def get_request_body(text, exception_handeling=True):
     # Dealing with some specific special characters
     text = re.sub(r'[-/]', ' ', text)
     text = re.sub(r'&', 'and', text)
-
-    print(text)
 
     # Converting to title for easy POS recognition of big phrases
     # This is causing problems with the logic extraction

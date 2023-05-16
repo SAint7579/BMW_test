@@ -88,7 +88,7 @@ def softmax(x):
     return x
 
 
-def lcs_similarity(s1, s2, type='min'):
+def lcs_similarity(s1, s2, type='min', extreme_length=None):
     """
     Calculate the longest common subsequence (LCS) similarity between two strings. This is the standard 
     Dynamic Programming method to calculate LCS.
@@ -125,7 +125,16 @@ def lcs_similarity(s1, s2, type='min'):
     # If we divide by max, then iX gives a better score for 318i than the iX models
     # If we divide by min, there are problems with the overlapping names of other configuration.
     if type == 'max':
-        return L[m][n] / max(m, n)
+        if extreme_length:
+            din = min(max(m, n), extreme_length)
+        else:
+            din = max(m, n)
+
+        return L[m][n] / din
     else:
-        return L[m][n] / min(m, n)
+        if extreme_length:
+            din = max(min(m, n), extreme_length)
+        else:
+            din = min(m, n)
+        return L[m][n] / din
     
