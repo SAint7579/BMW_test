@@ -32,7 +32,7 @@ if __name__ == '__main__':
     else:
         # Displaying the textbox in the main content area
         
-        prompt = st.text_area("Query", value='If you want to add multiple query, separate them with ";"', height=200, max_chars=None, key=None)
+        prompt = st.text_area("Query", value='- If you want to add multiple query, separate them with ";" \n- Please make sure that the Query has a valid Future date and information about the model', height=200, max_chars=None, key=None)
 
         # Add a submit button
         submitted = st.button('Process')
