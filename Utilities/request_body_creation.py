@@ -5,6 +5,7 @@ from textblob.sentiments import NaiveBayesAnalyzer
 import datefinder
 import numpy as np
 import re
+import datetime 
 
 MODEL_TYPE_CODE = { 'iX xDrive50': '21CF',
                     'iX xDrive40': '11CF',
@@ -98,8 +99,8 @@ def get_word_sentiment(word):
     
     """
     # Create a custom sentiment lexicon
-    custom_lexicon = {'with': 0.5, 'include': 0.5, 'want': 0.5, 'have':0.5, 
-                  'without': -0.5, 'exclude': -0.5}
+    custom_lexicon = {'with': 0.5, 'include': 0.5, 'want': 0.5, 'have':0.5, 'add':0.5,
+                  'without': -0.5, 'exclude': -0.5, 'remove':-0.5}
     
     word = revert_tense(word, 'v')
     if word in custom_lexicon:
@@ -291,7 +292,7 @@ def get_model_type_codes(tags,segregated):
     return model_type_codes
 
 
-def get_request_body(text):
+def get_request_body(text, exception_handeling=True):
     """
     Get the request body from the text.
     
@@ -299,6 +300,9 @@ def get_request_body(text):
     ----------
     text : str
         Input Text.
+
+    exception_handeling : bool, optional
+        Enable exception handeling. Set to False for test cases and debugging.
     
     Returns
     -------
@@ -312,26 +316,40 @@ def get_request_body(text):
     text = re.sub(r'[-/]', ' ', text)
     text = re.sub(r'&', 'and', text)
 
-    ## Getting the tags and segregating them
+    # Getting the tags and segregating them
     tags,_ = get_key_terms_with_pos(text)
     segregated = segregated_tags(tags)
 
-    ## Fetching the model type codes
+    # Fetching the model type codes
     model_type_codes = get_model_type_codes(tags,segregated)
 
-    if len(model_type_codes) == 0:
-        raise Exception("No model information found in the text.")
+    # Removing any repetitions in the model type codes
+    model_type_codes = list(set(model_type_codes))
 
-    ## Getting the boolean formula
-    logic, logic_sentiment = get_boolean_logic_datastruct(tags, segregated)
-    boolean_formula = convert_to_boolean_formula(logic, logic_sentiment)
+    # Debug Code
+    # for t,s in zip(tags,segregated):
+    #     print(t,s)
 
+    if len(model_type_codes) == 0 and exception_handeling:
+        raise Exception("Couldn't recognize the model code from the text")
+    
+    # Getting the date
     matches = list(datefinder.find_dates(text))
 
-    if len(matches) == 0:
-        raise Exception("Please provide a valid date in the text.")
+    if len(matches) == 0 and exception_handeling:
+        raise Exception("No date information found. Please provide a valid date in the query.")
         
-    date = matches[0].date().strftime("%Y-%m-%d")
+    date = matches[0].date()
+
+    if date < datetime.datetime.now().date() and exception_handeling:
+        # Invalid date
+        raise Exception(f"Date {date.strftime('%Y-%m-%d')} is invalid. Please provide a valid date in the query.")
+    
+    date= date.strftime("%Y-%m-%d")
+
+    # Getting the boolean formula
+    logic, logic_sentiment = get_boolean_logic_datastruct(tags, segregated)
+    boolean_formula = convert_to_boolean_formula(logic, logic_sentiment)
 
     ## Creating the request body
     request_bodies = []

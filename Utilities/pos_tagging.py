@@ -55,7 +55,9 @@ def get_key_terms_with_pos(text):
 
     all_tags = []
     for token in doc:
-        if token.pos_  in ["NOUN", "PROPN", "PRON", "X"]:
+        # The 2nd part of the if condition is because if there is any additional noun around these terms, they are not recognized by Spacy
+        # A .lower() on the entire text does solve this, but it messes up the POS for the other terms (the roof configurations mainly)
+        if (token.pos_  in ["NOUN", "PROPN", "PRON", "X"]) or (token.text.lower() in ['xdrive50', 'xdrive40', 'xdrive40i','xdrive40d', 'ix', 'x7']):
 
             if token.pos_ == "PRON":
                 # This is mainly for the 'iX' type keywords that are recongized as pronouns.
