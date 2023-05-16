@@ -10,23 +10,23 @@ import datetime
 ## Downloading the corpora required by textblob
 download_corpora.download_all()
 
-MODEL_TYPE_CODE = { 'iX xDrive50': '21CF',
-                    'iX xDrive40': '11CF',
-                    'X7 xDrive40i': '21EM',
-                    'X7 xDrive40d': '21EN',
-                    'M8': 'DZ01',
+MODEL_TYPE_CODE = { 'ix xdrive50': '21CF',
+                    'ix xdrive40': '11CF',
+                    'x7 xdrive40i': '21EM',
+                    'x7 xdrive40d': '21EN',
+                    'm8': 'DZ01',
                     '318i': '28FF',}
 
-STEERING_CONFIG_CODE = { 'Left-Hand Drive': 'LL',
-                         'Right-Hand Drive': 'RL',}
+STEERING_CONFIG_CODE = { 'left-hand drive': 'LL',
+                         'right-hand drive': 'RL',}
 
-PACKAGE_CODE = {    'M Sport Package': 'P337A',
-                    'M Sport Package Pro': 'P33BA',
-                    'Comfort Package EU': 'P7LGA'}
+PACKAGE_CODE = {    'm sport package': 'P337A',
+                    'm sport package pro': 'P33BA',
+                    'comfort package eu': 'P7LGA'}
 
-ROOF_CONFIG_CODE = {'Panorama Glass Roof': 'S402A',
-                    'Panorama Glass Roof Sky Lounge': 'S407A',
-                    'Sunroof': 'S403A'}
+ROOF_CONFIG_CODE = {'panorama glass roof': 'S402A',
+                    'panorama glass roof sky lounge': 'S407A',
+                    'sunroof': 'S403A'}
 
 
 def segregated_tags(tags):
@@ -106,6 +106,7 @@ def get_word_sentiment(word):
                   'without': -0.5, 'exclude': -0.5, 'remove':-0.5}
     
     word = revert_tense(word, 'v')
+    word = word.lower()
     if word in custom_lexicon:
         return custom_lexicon[word]
     else:
@@ -194,7 +195,7 @@ def get_boolean_logic_datastruct(tags, segregated):
                         logic.append([t])
                         # The or conjugation between the two categories comes from the head of the fisrt tag of the previous group or the head of the current tag (if singular).
                         # Can be seen in the displacy image above
-                        if (len(logic[-2][0]['head_conj']) > 0 and logic[-2][0]['head_conj'][0].text == 'or') or (len(t['head_conj']) > 0 and t['head_conj'][0].text == 'or'):
+                        if (len(logic) >= 2 and len(logic[-2][0]['head_conj']) > 0 and logic[-2][0]['head_conj'][0].text.lower() == 'or') or (len(t['head_conj']) > 0 and t['head_conj'][0].text.lower() == 'or'):
                             logic_sentiment.append('/')
                         else:
                             logic_sentiment.append('+')
@@ -276,11 +277,11 @@ def get_model_type_codes(tags,segregated):
     for t,s in zip(tags,segregated):
         if s == 0:
             # Trying to get it directly from dictornary indexing
-            if t['main_token'].text in code_dict.keys():
-                model_type_codes.append(code_dict[t['main_token'].text])
+            if t['main_token'].text.lower() in code_dict.keys():
+                model_type_codes.append(code_dict[t['main_token'].text.lower()])
 
-            elif t['text'] in code_dict.keys():
-                model_type_codes.append(code_dict[t['text']])
+            elif t['text'].lower() in code_dict.keys():
+                model_type_codes.append(code_dict[t['text'].lower()])
 
             # Fetching with LCS similarity
             else:
@@ -319,6 +320,11 @@ def get_request_body(text, exception_handeling=True):
     text = re.sub(r'[-/]', ' ', text)
     text = re.sub(r'&', 'and', text)
 
+    print(text)
+
+    # Converting to title for easy POS recognition of big phrases
+    text = text.title()
+
     # Getting the tags and segregating them
     tags,_ = get_key_terms_with_pos(text)
     segregated = segregated_tags(tags)
@@ -330,19 +336,27 @@ def get_request_body(text, exception_handeling=True):
     model_type_codes = list(set(model_type_codes))
 
     # Debug Code
-    # for t,s in zip(tags,segregated):
-    #     print(t,s)
+    for t,s in zip(tags,segregated):
+        print(t,s)
+
+    print()
 
     if len(model_type_codes) == 0 and exception_handeling:
         raise Exception("Couldn't recognize the model code from the text")
     
     # Getting the date
-    matches = list(datefinder.find_dates(text))
+    matches = list(datefinder.find_dates(text, source=True))
+
+    # Removing dates with less than 3 characters in source
+    matches = [i for i in matches if len(i[1])>=3]
 
     if len(matches) == 0 and exception_handeling:
         raise Exception("No date information found. Please provide a valid date in the query.")
         
-    date = matches[0].date()
+    print(matches)
+    ## Selecting the date with the largest length of source
+    matches = sorted(matches, key=lambda x: len(x[1]), reverse=True)
+    date = matches[0][0].date()
 
     if date < datetime.datetime.now().date() and exception_handeling:
         # Invalid date

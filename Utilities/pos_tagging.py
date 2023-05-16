@@ -7,7 +7,7 @@ import os
 if "en_core_web_md" not in spacy.util.get_installed_models():
     # Download the model
     spacy.cli.download("en_core_web_md")
-    
+
 nlp = spacy.load("en_core_web_md")
 
 
